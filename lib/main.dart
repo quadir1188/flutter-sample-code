@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
+import 'daysFilter.dart';
+
 enum SortOrder { Ascending, Descending }
 
 class AccountTransfer {
@@ -18,32 +20,31 @@ class AccountTransfer {
   });
 }
 
-final accountTransfersProvider =
-StateProvider<List<AccountTransfer>>((ref) {
+final accountTransfersProvider = StateProvider<List<AccountTransfer>>((ref) {
   return [
     AccountTransfer(
       fromAccount: 'Account A',
       toAccount: 'Account B',
       amount: 10.0,
-      date: DateTime(2023, 6, 10),
+      date: DateTime(2023, 07, 01),
     ),
     AccountTransfer(
       fromAccount: 'Account C',
       toAccount: 'Account D',
       amount: 20.0,
-      date: DateTime(2023, 6, 2),
+      date: DateTime(2023, 07, 01),
     ),
     AccountTransfer(
       fromAccount: 'Account E',
       toAccount: 'Account F',
       amount: 30.0,
-      date: DateTime(2023, 5, 23),
+      date: DateTime(2023, 06, 23),
     ),
     AccountTransfer(
       fromAccount: 'Account G',
       toAccount: 'Account H',
       amount: 1000.0,
-      date: DateTime(2023, 5, 10),
+      date: DateTime(2023, 06, 22),
     ),
     AccountTransfer(
       fromAccount: 'Account I',
@@ -60,13 +61,12 @@ StateProvider<List<AccountTransfer>>((ref) {
   ];
 });
 
-final sortOrderProvider = StateProvider<SortOrder>((ref) => SortOrder.Ascending);
+final sortOrderProvider =
+    StateProvider<SortOrder>((ref) => SortOrder.Ascending);
 final sortColumnIndexProvider = StateProvider<int>((ref) => -1);
 final selectedAccountsProvider =
-StateProvider<List<AccountTransfer>>((ref) => []);
+    StateProvider<List<AccountTransfer>>((ref) => []);
 final searchTextProvider = StateProvider<String>((ref) => '');
-
-
 
 final filteredAccountTransfersProvider = Provider<List<AccountTransfer>>((ref) {
   final searchText = ref.watch(searchTextProvider.notifier).state.toLowerCase();
@@ -74,7 +74,7 @@ final filteredAccountTransfersProvider = Provider<List<AccountTransfer>>((ref) {
   final selectedAccounts = ref.watch(selectedAccountsProvider);
 
   if (searchText.isEmpty) {
-    if(selectedAccounts.isNotEmpty){
+    if (selectedAccounts.isNotEmpty) {
       return accountTransfers.where((transfer) {
         for (var selectedAccount in selectedAccounts) {
           if (transfer.fromAccount.contains(selectedAccount.fromAccount)) {
@@ -86,13 +86,16 @@ final filteredAccountTransfersProvider = Provider<List<AccountTransfer>>((ref) {
     }
     return accountTransfers;
   } else {
-    return accountTransfers.where((transfer) =>
-    transfer.fromAccount.toLowerCase().contains(searchText) ||
-        transfer.toAccount.toLowerCase().contains(searchText) ||
-        transfer.amount.toString().toLowerCase().contains(searchText) ||
-        transfer.date.toString().toLowerCase().contains(searchText)).toList();
+    return accountTransfers
+        .where((transfer) =>
+            transfer.fromAccount.toLowerCase().contains(searchText) ||
+            transfer.toAccount.toLowerCase().contains(searchText) ||
+            transfer.amount.toString().toLowerCase().contains(searchText) ||
+            transfer.date.toString().toLowerCase().contains(searchText))
+        .toList();
   }
 });
+
 class AccountTransferTable extends ConsumerWidget {
   const AccountTransferTable({Key? key}) : super(key: key);
 
@@ -105,10 +108,10 @@ class AccountTransferTable extends ConsumerWidget {
 
     List<AccountTransfer> filteredTransfers = accountTransfers
         .where((transfer) =>
-    transfer.fromAccount.toLowerCase().contains(searchText) ||
-        transfer.toAccount.toLowerCase().contains(searchText) ||
-        transfer.amount.toString().contains(searchText) ||
-        transfer.date.toString().contains(searchText))
+            transfer.fromAccount.toLowerCase().contains(searchText) ||
+            transfer.toAccount.toLowerCase().contains(searchText) ||
+            transfer.amount.toString().contains(searchText) ||
+            transfer.date.toString().contains(searchText))
         .toList();
 
     filteredTransfers.sort((a, b) {
@@ -207,7 +210,8 @@ class AccountTransferTable extends ConsumerWidget {
     );
   }
 
-  Widget buildSortIcon(int sortColumnIndex, int columnIndex, SortOrder sortOrder) {
+  Widget buildSortIcon(
+      int sortColumnIndex, int columnIndex, SortOrder sortOrder) {
     if (sortColumnIndex == columnIndex) {
       return sortOrder == SortOrder.Ascending
           ? const Icon(Icons.arrow_upward)
@@ -219,7 +223,9 @@ class AccountTransferTable extends ConsumerWidget {
   void toggleSortOrder(BuildContext context, WidgetRef ref) {
     final sortOrder = ref.read(sortOrderProvider.notifier).state;
     ref.read(sortOrderProvider.notifier).state =
-    sortOrder == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+        sortOrder == SortOrder.Ascending
+            ? SortOrder.Descending
+            : SortOrder.Ascending;
   }
 }
 
@@ -242,9 +248,10 @@ class AccountTransferSelectionButton extends ConsumerWidget {
                   .toList(),
               initialValue: selectedAccounts.toList(),
               onConfirm: (List<AccountTransfer>? values) {
-                ref.read(selectedAccountsProvider.notifier).state = values?.toList() ?? [];
-              var value  =  ref.watch(selectedAccountsProvider.notifier).state;
-              print("selected value ${value.first.toAccount}");
+                ref.read(selectedAccountsProvider.notifier).state =
+                    values?.toList() ?? [];
+                var value = ref.watch(selectedAccountsProvider.notifier).state;
+                print("selected value ${value.first.toAccount}");
                 // Navigator.of(context).pop(values);
               },
             );
@@ -270,9 +277,15 @@ class AccountTransferScreen extends StatelessWidget {
       child: MaterialApp(
         home: Scaffold(
           appBar: AppBar(title: const Text('Account Transfers')),
-          body: const Column(
+          body: Column(
             children: [
               AccountTransferSelectionButton(),
+              SizedBox(height: 20,),
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => AccountTransferScreenWithDaysFilter()));
+                  },
+                  child: Text("Show days filter")),
               SizedBox(height: 16),
               SearchBox(),
               Expanded(child: AccountTransferTable()),
@@ -310,5 +323,9 @@ class SearchBox extends ConsumerWidget {
 }
 
 void main() {
-  runApp(AccountTransferScreen());
+  runApp(
+    MaterialApp(
+      home: AccountTransferScreen(),
+    ),
+  );
 }
