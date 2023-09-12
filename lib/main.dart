@@ -1,331 +1,345 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:multi_select_flutter/multi_select_flutter.dart';
 
-import 'daysFilter.dart';
+void main() {
+  runApp(MyApp());
+}
 
-enum SortOrder { Ascending, Descending }
-
-class AccountTransfer {
-  final String fromAccount;
-  final String toAccount;
+class Transfer {
+  final String date;
+  final String description;
   final double amount;
-  final DateTime date;
+  final String accountNumber;
+  final String currency;
 
-  AccountTransfer({
-    required this.fromAccount,
-    required this.toAccount,
-    required this.amount,
+  Transfer({
     required this.date,
+    required this.description,
+    required this.amount,
+    required this.accountNumber,
+    required this.currency,
   });
 }
 
-final accountTransfersProvider = StateProvider<List<AccountTransfer>>((ref) {
-  return [
-    AccountTransfer(
-      fromAccount: 'Account A',
-      toAccount: 'Account B',
-      amount: 10.0,
-      date: DateTime(2023, 07, 01),
-    ),
-    AccountTransfer(
-      fromAccount: 'Account C',
-      toAccount: 'Account D',
-      amount: 20.0,
-      date: DateTime(2023, 07, 01),
-    ),
-    AccountTransfer(
-      fromAccount: 'Account E',
-      toAccount: 'Account F',
-      amount: 30.0,
-      date: DateTime(2023, 06, 23),
-    ),
-    AccountTransfer(
-      fromAccount: 'Account G',
-      toAccount: 'Account H',
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final List<Transfer> transfers = [
+    Transfer(
+      date: '2023-09-12',
+      description: 'Transfer from Account A',
       amount: 1000.0,
-      date: DateTime(2023, 06, 22),
+      accountNumber: '12345678',
+      currency: 'USD',
     ),
-    AccountTransfer(
-      fromAccount: 'Account I',
-      toAccount: 'Account J',
-      amount: 2000.0,
-      date: DateTime(2023, 4, 20),
+    Transfer(
+      date: '2023-09-11',
+      description: 'Transfer to Account B',
+      amount: -500.0,
+      accountNumber: '98765432',
+      currency: 'EUR',
     ),
-    AccountTransfer(
-      fromAccount: 'Account K',
-      toAccount: 'Account L',
-      amount: 3000.0,
-      date: DateTime(2023, 4, 5),
+    Transfer(
+      date: '2023-09-10',
+      description: 'Transfer from Account C',
+      amount: 750.0,
+      accountNumber: '56789012',
+      currency: 'GBP',
     ),
+    Transfer(
+      date: '2023-09-09',
+      description: 'Transfer to Account D',
+      amount: -300.0,
+      accountNumber: '34567890',
+      currency: 'USD',
+    ),
+    Transfer(
+      date: '2023-09-08',
+      description: 'Transfer from Account E',
+      amount: 1200.0,
+      accountNumber: '23456789',
+      currency: 'EUR',
+    ),
+    Transfer(
+      date: '2023-09-07',
+      description: 'Transfer to Account F',
+      amount: -600.0,
+      accountNumber: '45678901',
+      currency: 'GBP',
+    ),
+    Transfer(
+      date: '2023-09-06',
+      description: 'Transfer from Account G',
+      amount: 900.0,
+      accountNumber: '67890123',
+      currency: 'USD',
+    ),
+    Transfer(
+      date: '2023-09-12',
+      description: 'Transfer from Account A',
+      amount: 1000.0,
+      accountNumber: '67890123',
+      currency: 'EUR',
+    ),
+    Transfer(
+      date: '2023-09-11',
+      description: 'Transfer to Account B',
+      amount: -500.0,
+      accountNumber: '56789012',
+      currency: 'USD',
+    ),
+    Transfer(
+      date: '2023-09-11',
+      description: 'Transfer from Account C',
+      amount: 750.0,
+      accountNumber: '56789012',
+      currency: 'GBP',
+    ),
+    Transfer(
+      date: '2023-09-09',
+      description: 'Transfer to Account D',
+      amount: -300.0,
+      accountNumber: '23456789',
+      currency: 'GBP',
+    ),
+    Transfer(
+      date: '2023-09-08',
+      description: 'Transfer from Account E',
+      amount: 1200.0,
+      accountNumber: '23456789',
+      currency: 'EUR',
+    ),
+    Transfer(
+      date: '2023-09-07',
+      description: 'Transfer to Account F',
+      amount: -600.0,
+      accountNumber: '45678901',
+      currency: 'GBP',
+    ),
+    Transfer(
+      date: '2023-09-06',
+      description: 'Transfer from Account G',
+      amount: 900.0,
+      accountNumber: '67890123',
+      currency: 'USD',
+    ),
+    // Add more Transfer entries here with account numbers and currencies.
   ];
-});
 
-final sortOrderProvider =
-    StateProvider<SortOrder>((ref) => SortOrder.Ascending);
-final sortColumnIndexProvider = StateProvider<int>((ref) => -1);
-final selectedAccountsProvider =
-    StateProvider<List<AccountTransfer>>((ref) => []);
-final searchTextProvider = StateProvider<String>((ref) => '');
+  List<Transfer> filteredTransfers = [];
 
-final filteredAccountTransfersProvider = Provider<List<AccountTransfer>>((ref) {
-  final searchText = ref.watch(searchTextProvider.notifier).state.toLowerCase();
-  final accountTransfers = ref.watch(accountTransfersProvider.notifier).state;
-  final selectedAccounts = ref.watch(selectedAccountsProvider);
-
-  if (searchText.isEmpty) {
-    if (selectedAccounts.isNotEmpty) {
-      return accountTransfers.where((transfer) {
-        for (var selectedAccount in selectedAccounts) {
-          if (transfer.fromAccount.contains(selectedAccount.fromAccount)) {
-            return true;
-          }
-        }
-        return false;
-      }).toList();
-    }
-    return accountTransfers;
-  } else {
-    return accountTransfers
-        .where((transfer) =>
-            transfer.fromAccount.toLowerCase().contains(searchText) ||
-            transfer.toAccount.toLowerCase().contains(searchText) ||
-            transfer.amount.toString().toLowerCase().contains(searchText) ||
-            transfer.date.toString().toLowerCase().contains(searchText))
-        .toList();
-  }
-});
-
-class AccountTransferTable extends ConsumerWidget {
-  const AccountTransferTable({Key? key}) : super(key: key);
+  String dateDropdownValue = 'All';
+  String descriptionDropdownValue = 'All';
+  String amountDropdownValue = 'All';
+  String accountDropdownValue = 'All';
+  String currencyDropdownValue = 'All';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final accountTransfers = ref.watch(filteredAccountTransfersProvider);
-    final sortOrder = ref.watch(sortOrderProvider);
-    final sortColumnIndex = ref.watch(sortColumnIndexProvider);
-    final searchText = ref.watch(searchTextProvider);
+  void initState() {
+    super.initState();
+    // Initially, set the filteredTransfers to the original transfers list.
+    filteredTransfers = List.from(transfers);
+  }
 
-    List<AccountTransfer> filteredTransfers = accountTransfers
-        .where((transfer) =>
-            transfer.fromAccount.toLowerCase().contains(searchText) ||
-            transfer.toAccount.toLowerCase().contains(searchText) ||
-            transfer.amount.toString().contains(searchText) ||
-            transfer.date.toString().contains(searchText))
-        .toList();
-
-    filteredTransfers.sort((a, b) {
-      if (sortColumnIndex == 0) {
-        if (sortOrder == SortOrder.Ascending) {
-          return a.fromAccount.compareTo(b.fromAccount);
-        } else {
-          return b.fromAccount.compareTo(a.fromAccount);
-        }
-      } else if (sortColumnIndex == 1) {
-        if (sortOrder == SortOrder.Ascending) {
-          return a.toAccount.compareTo(b.toAccount);
-        } else {
-          return b.toAccount.compareTo(a.toAccount);
-        }
-      } else if (sortColumnIndex == 2) {
-        if (sortOrder == SortOrder.Ascending) {
-          return a.amount.compareTo(b.amount);
-        } else {
-          return b.amount.compareTo(a.amount);
-        }
-      } else if (sortColumnIndex == 3) {
-        if (sortOrder == SortOrder.Ascending) {
-          return a.date.compareTo(b.date);
-        } else {
-          return b.date.compareTo(a.date);
-        }
-      } else {
-        return 0;
-      }
+  void filterData() {
+    setState(() {
+      filteredTransfers = transfers
+          .where((transfer) {
+        if (dateDropdownValue != 'All' && transfer.date != dateDropdownValue) return false;
+        if (descriptionDropdownValue != 'All' &&
+            !transfer.description.toLowerCase().contains(descriptionDropdownValue.toLowerCase())) return false;
+        if (amountDropdownValue != 'All' && transfer.amount.toString() != amountDropdownValue) return false;
+        if (accountDropdownValue != 'All' && transfer.accountNumber != accountDropdownValue) return false;
+        if (currencyDropdownValue != 'All' && transfer.currency != currencyDropdownValue) return false;
+        return true;
+      })
+          .toList();
     });
-
-    return Column(
-      children: [
-        DataTable(
-          columns: [
-            DataColumn(
-              label: Row(
-                children: [
-                  const Text('From Account'),
-                  buildSortIcon(sortColumnIndex, 0, sortOrder),
-                ],
-              ),
-              onSort: (columnIndex, _) {
-                ref.read(sortColumnIndexProvider.notifier).state = columnIndex;
-                toggleSortOrder(context, ref);
-              },
-            ),
-            DataColumn(
-              label: Row(
-                children: [
-                  const Text('To Account'),
-                  buildSortIcon(sortColumnIndex, 1, sortOrder),
-                ],
-              ),
-              onSort: (columnIndex, _) {
-                ref.read(sortColumnIndexProvider.notifier).state = columnIndex;
-                toggleSortOrder(context, ref);
-              },
-            ),
-            DataColumn(
-              label: Row(
-                children: [
-                  const Text('Amount'),
-                  buildSortIcon(sortColumnIndex, 2, sortOrder),
-                ],
-              ),
-              onSort: (columnIndex, _) {
-                ref.read(sortColumnIndexProvider.notifier).state = columnIndex;
-                toggleSortOrder(context, ref);
-              },
-            ),
-            DataColumn(
-              label: Row(
-                children: [
-                  const Text('Date'),
-                  buildSortIcon(sortColumnIndex, 3, sortOrder),
-                ],
-              ),
-              onSort: (columnIndex, _) {
-                ref.read(sortColumnIndexProvider.notifier).state = columnIndex;
-                toggleSortOrder(context, ref);
-              },
-            ),
-          ],
-          rows: filteredTransfers.map((transfer) {
-            return DataRow(cells: [
-              DataCell(Text(transfer.fromAccount)),
-              DataCell(Text(transfer.toAccount)),
-              DataCell(Text(transfer.amount.toString())),
-              DataCell(Text(transfer.date.toString())),
-            ]);
-          }).toList(),
-        ),
-      ],
-    );
   }
-
-  Widget buildSortIcon(
-      int sortColumnIndex, int columnIndex, SortOrder sortOrder) {
-    if (sortColumnIndex == columnIndex) {
-      return sortOrder == SortOrder.Ascending
-          ? const Icon(Icons.arrow_upward)
-          : const Icon(Icons.arrow_downward);
-    }
-    return const Icon(Icons.unfold_more);
-  }
-
-  void toggleSortOrder(BuildContext context, WidgetRef ref) {
-    final sortOrder = ref.read(sortOrderProvider.notifier).state;
-    ref.read(sortOrderProvider.notifier).state =
-        sortOrder == SortOrder.Ascending
-            ? SortOrder.Descending
-            : SortOrder.Ascending;
-  }
-}
-
-class AccountTransferSelectionButton extends ConsumerWidget {
-  const AccountTransferSelectionButton({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedAccounts = ref.watch(selectedAccountsProvider);
-    return ElevatedButton(
-      onPressed: () async {
-        final selectedAccountsResult = await showDialog<List<AccountTransfer>>(
-          context: context,
-          builder: (BuildContext context) {
-            return MultiSelectDialog<AccountTransfer>(
-              items: ref
-                  .watch(accountTransfersProvider.notifier)
-                  .state
-                  .map((e) => MultiSelectItem(e, e.fromAccount))
-                  .toList(),
-              initialValue: selectedAccounts.toList(),
-              onConfirm: (List<AccountTransfer>? values) {
-                ref.read(selectedAccountsProvider.notifier).state =
-                    values?.toList() ?? [];
-                var value = ref.watch(selectedAccountsProvider.notifier).state;
-                print("selected value ${value.first.toAccount}");
-                // Navigator.of(context).pop(values);
-              },
-            );
-          },
-        );
-
-        if (selectedAccountsResult != null) {
-          // Handle selected accounts
-          print('Selected Accounts: $selectedAccountsResult');
-        }
-      },
-      child: const Text('Select Accounts'),
-    );
-  }
-}
-
-class AccountTransferScreen extends StatelessWidget {
-  const AccountTransferScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ProviderScope(
-      child: MaterialApp(
-        home: Scaffold(
-          appBar: AppBar(title: const Text('Account Transfers')),
-          body: Column(
-            children: [
-              AccountTransferSelectionButton(),
-              SizedBox(height: 20,),
-              ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => AccountTransferScreenWithDaysFilter()));
+    return MaterialApp(
+      title: 'Account Transfer Data Table',
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Account Transfer Data Table'),
+        ),
+        body: ListView(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                DropdownButton<String>(
+                  value: dateDropdownValue,
+                  onChanged: (value) {
+                    setState(() {
+                      dateDropdownValue = value!;
+                      filterData();
+                    });
                   },
-                  child: Text("Show days filter")),
-              SizedBox(height: 16),
-              SearchBox(),
-              Expanded(child: AccountTransferTable()),
-            ],
-          ),
+                  items: [
+                    'All',
+                    '2023-09-12',
+                    '2023-09-11',
+                    '2023-09-10',
+                    '2023-09-09',
+                    '2023-09-08',
+                    '2023-09-07',
+                    '2023-09-06',
+                  ] // Add more date options here.
+                      .map<DropdownMenuItem<String>>(
+                        (String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    },
+                  )
+                      .toList(),
+                ),
+                DropdownButton<String>(
+                  value: descriptionDropdownValue,
+                  onChanged: (value) {
+                    setState(() {
+                      descriptionDropdownValue = value!;
+                      filterData();
+                    });
+                  },
+                  items: [
+                    'All',
+                    'Transfer from',
+                    'Transfer to',
+                  ] // Add more description options here.
+                      .map<DropdownMenuItem<String>>(
+                        (String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    },
+                  )
+                      .toList(),
+                ),
+                DropdownButton<String>(
+                  value: amountDropdownValue,
+                  onChanged: (value) {
+                    setState(() {
+                      amountDropdownValue = value!;
+                      filterData();
+                    });
+                  },
+                  items: [
+                    'All',
+                    '1000.0',
+                    '-500.0',
+                    '750.0',
+                    '-300.0',
+                    '1200.0',
+                    '-600.0',
+                    '900.0',
+                  ] // Add more amount options here.
+                      .map<DropdownMenuItem<String>>(
+                        (String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    },
+                  )
+                      .toList(),
+                ),
+                DropdownButton<String>(
+                  value: accountDropdownValue,
+                  onChanged: (value) {
+                    setState(() {
+                      accountDropdownValue = value!;
+                      filterData();
+                    });
+                  },
+                  items: [
+                    'All',
+                    '12345678',
+                    '98765432',
+                    '56789012',
+                    '34567890',
+                    '23456789',
+                    '45678901',
+                    '67890123',
+                  ] // Add more account number options here.
+                      .map<DropdownMenuItem<String>>(
+                        (String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    },
+                  )
+                      .toList(),
+                ),
+                DropdownButton<String>(
+                  value: currencyDropdownValue,
+                  onChanged: (value) {
+                    setState(() {
+                      currencyDropdownValue = value!;
+                      filterData();
+                    });
+                  },
+                  items: [
+                    'All',
+                    'USD',
+                    'EUR',
+                    'GBP',
+                  ] // Add more currency options here.
+                      .map<DropdownMenuItem<String>>(
+                        (String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    },
+                  )
+                      .toList(),
+                ),
+              ],
+            ),
+            DataTable(
+              columns: <DataColumn>[
+                DataColumn(
+                  label: Text('Date'),
+                ),
+                DataColumn(
+                  label: Text('Description'),
+                ),
+                DataColumn(
+                  label: Text('Amount'),
+                ),
+                DataColumn(
+                  label: Text('Account Number'),
+                ),
+                DataColumn(
+                  label: Text('Currency'),
+                ),
+              ],
+              rows: filteredTransfers
+                  .map(
+                    (transfer) => DataRow(
+                  cells: <DataCell>[
+                    DataCell(Text(transfer.date)),
+                    DataCell(Text(transfer.description)),
+                    DataCell(Text('\$${transfer.amount.toStringAsFixed(2)}')),
+                    DataCell(Text(transfer.accountNumber)),
+                    DataCell(Text(transfer.currency)),
+                  ],
+                ),
+              )
+                  .toList(),
+            ),
+          ],
         ),
       ),
     );
   }
-}
-
-class SearchBox extends ConsumerWidget {
-  const SearchBox({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final searchText = ref.watch(searchTextProvider.notifier).state;
-
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: TextField(
-        onChanged: (value) {
-          ref.read(searchTextProvider.notifier).state = value.toLowerCase();
-        },
-        decoration: InputDecoration(
-          labelText: 'Search',
-          prefixIcon: Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-void main() {
-  runApp(
-    MaterialApp(
-      home: AccountTransferScreen(),
-    ),
-  );
 }
