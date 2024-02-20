@@ -43,28 +43,37 @@ class _CountrySelectionState extends State<CountrySelection> {
     // Check if it's a mobile platform
     final bool isMobile = MediaQuery.of(context).size.width < 600;
 
-    return isMobile ? _buildMobileDropdown() : _buildWebDropdown();
+    return isMobile ? _buildMobileDialog() : _buildWebDropdown();
   }
 
-  Widget _buildMobileDropdown() {
-    return PopupMenuButton<String>(
-      onSelected: (String value) {
-        setState(() {
-          _selectedCountry = value;
-        });
+  Widget _buildMobileDialog() {
+    return ListTile(
+      title: Text(_selectedCountry ?? 'Select a country'),
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Select a country'),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: _countries.map((String country) {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedCountry = country;
+                          Navigator.of(context).pop();
+                        });
+                      },
+                      child: Text(country),
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          },
+        );
       },
-      itemBuilder: (BuildContext context) {
-        return _countries.map((String country) {
-          return PopupMenuItem<String>(
-            value: country,
-            child: Text(country),
-          );
-        }).toList();
-      },
-      child: ListTile(
-        title: Text(_selectedCountry ?? 'Select a country'),
-        trailing: Icon(Icons.arrow_drop_down),
-      ),
     );
   }
 
